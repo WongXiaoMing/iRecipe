@@ -71,7 +71,7 @@ def api_mapping():
 def api_tags():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM sticker_tags')
+    cursor.execute('SELECT * FROM sticker_tags where favorite=true')
     rows = cursor.fetchall()
     conn.close()
 
@@ -105,6 +105,13 @@ def save_tags():
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        
+        if data.get('delete', False):
+            # 删除标签
+            cursor.execute('DELETE FROM sticker_tags WHERE sticker_id = ?', (sticker_id,))
+            conn.commit()
+            conn.close()
+            return jsonify({'success': True})
 
         cursor.execute('''
             INSERT OR REPLACE INTO sticker_tags

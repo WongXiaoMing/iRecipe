@@ -1,5 +1,34 @@
 
 
+.nav-bar {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-link {
+    color: #666;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.nav-link:hover {
+    background: #f8f9fa;
+    color: #007bff;
+}
+
+.nav-link.active {
+    background: #007bff;
+    color: white;
+}
+
 h1 {
     color: #333;
     margin-bottom: 10px;
@@ -117,6 +146,30 @@ h1 {
     display: flex;
     align-items: center;
     gap: 8px;
+    justify-content: space-between;
+}
+
+.favorite-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.favorite-btn:hover {
+    transform: scale(1.1);
+}
+
+.favorite-btn.active {
+    color: #ff4757;
+}
+
+.favorite-icon {
+    color: #ffa502;
+    font-size: 16px;
 }
 
 .dish-name .favorite-icon {

@@ -81,7 +81,7 @@ function renderPhotos() {
                                     <button class="btn-edit" onclick="editTag('${stickerId}')">编辑</button>
                                     <button class="btn-favorite ${isFavorite ? 'active' : ''}" 
                                             onclick="toggleFavorite('${stickerId}')">
-                                        ⭐
+                                         ${isFavorite ? '⭐' : '☆'}
                                     </button>
                                     <button class="btn-delete" onclick="deleteSticker('${photoId}', ${index})">删除</button>
                                 </div>
@@ -129,7 +129,8 @@ document.getElementById('tagForm').addEventListener('submit', async (e) => {
         description: document.getElementById('description').value,
         ingredients: document.getElementById('ingredients').value,
         recipe: document.getElementById('recipe').value,
-        updated_time: new Date().toISOString()
+        updated_time: new Date().toISOString(),
+        favorite: true
     };
 
     try {
@@ -164,6 +165,7 @@ async function toggleFavorite(stickerId) {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
+                ops: tag.favorite?'update':'delete' ,
                 sticker_id: stickerId,
                 ...tag
             })

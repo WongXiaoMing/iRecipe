@@ -23,12 +23,18 @@
 </head>
 <body>
     <div class="container">
+        <div class="nav-bar">
+            <a href="/" class="nav-link">🏠 主页</a>
+            <a href="/browse.html" class="nav-link active">📸 管理</a>
+            <a href="/recipe.html" class="nav-link">📖 点餐</a>
+        </div>
+        
         <h1>📸 照片/贴纸浏览管理</h1>
         
         <div class="toolbar">
             <button class="btn btn-primary" onclick="refreshData()">🔄 刷新</button>
             <button class="btn btn-danger" onclick="deleteSelected()">🗑️ 删除选中</button>
-            <button class="btn btn-success" onclick="batchFavorite()">⭐ 批量收藏</button>
+            <button class="btn btn-success" onclick="batchFavorite()">⭐ 收藏选中</button>
             
             <div class="sort-controls">
                 <label for="sortBy">排序方式:</label>
