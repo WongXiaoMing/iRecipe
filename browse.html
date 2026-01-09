@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照片/贴纸浏览管理</title>
+    <link rel="stylesheet" href="browse-style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 照片/贴纸浏览管理</h1>
+        
+        <div class="toolbar">
+            <button class="btn btn-primary" onclick="refreshData()">🔄 刷新</button>
+            <button class="btn btn-danger" onclick="deleteSelected()">🗑️ 删除选中</button>
+            <button class="btn btn-success" onclick="batchFavorite()">⭐ 批量收藏</button>
+        </div>
+
+        <div class="photo-grid" id="photoGrid">
+            <div class="empty-state">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 标记编辑弹窗 -->
+    <div id="tagModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeTagModal()">&times;</span>
+            <h2>编辑贴纸标记</h2>
+            <form id="tagForm">
+                <input type="hidden" id="stickerId">
+                
+                <div class="form-group">
+                    <label for="dishName">菜名 *</label>
+                    <input type="text" id="dishName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">描述</label>
+                    <textarea id="description"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ingredients">原料</label>
+                    <textarea id="ingredients"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recipe">做法</label>
+                    <textarea id="recipe"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn" onclick="closeTagModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="browse.js"></script>
+</body>
+</html>

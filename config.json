@@ -1,0 +1,17 @@
+{
+  "nas_path": "C:\\Users\\admin\\Pictures\\icloud",
+  "local_data_path": "./data",
+  "raw_photos_path": "./data/raw_photos",
+  "stickers_static_path": "./data/stickers/static",
+  "stickers_dynamic_path": "./data/stickers/dynamic",
+  "tags_path": "./data/tags",
+  "mapping_file": "./data/photo_sticker_mapping.json",
+  "processed_files_log": "./data/processed_files.log",
+  "scan_interval_seconds": 3600,
+  "ai_api": {
+    "provider": "clip",
+    "clip_model": "ViT-B/32",
+    "baidu_api_key": "",
+    "baidu_secret_key": ""
+  }
+}
