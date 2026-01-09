@@ -45,6 +45,20 @@ def create_database():
         )
     ''')
 
+    # 创建predefined_dishes表（预录入菜品）
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS predefined_dishes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dish_name TEXT NOT NULL,
+            description TEXT,
+            ingredients TEXT,
+            recipe TEXT,
+            photo_path TEXT,
+            created_time TEXT,
+            updated_time TEXT
+        )
+    ''')
+
     conn.commit()
     conn.close()
     print("数据库和表创建完成")

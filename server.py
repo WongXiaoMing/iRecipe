@@ -7,9 +7,11 @@
 import os
 import json
 import sqlite3
-import datetime
+from datetime import datetime
+import time
 from flask import Flask, send_file, jsonify, request
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 CORS(app)  # 启用CORS支持
@@ -19,6 +21,11 @@ def get_db_connection():
     conn = sqlite3.connect('data/irecipe.db')
     conn.row_factory = sqlite3.Row
     return conn
+
+def allowed_file(filename):
+    """检查文件类型是否允许"""
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 @app.route('/index.html')
@@ -197,6 +204,174 @@ def update_mapping():
         conn.close()
 
         return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/predefined_dishes')
+def get_predefined_dishes():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM predefined_dishes ORDER BY created_time DESC')
+        rows = cursor.fetchall()
+        conn.close()
+
+        dishes = []
+        for row in rows:
+            dishes.append({
+                'id': row['id'],
+                'dish_name': row['dish_name'],
+                'description': row['description'],
+                'ingredients': row['ingredients'],
+                'recipe': row['recipe'],
+                'photo_path': row['photo_path'],
+                'created_time': row['created_time'],
+                'updated_time': row['updated_time']
+            })
+
+        return jsonify(dishes)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/predefined_dishes', methods=['POST'])
+def create_predefined_dish():
+    try:
+        data = request.get_json()
+        dish_name = data.get('dish_name', '').strip()
+        if not dish_name:
+            return jsonify({'error': '菜品名称不能为空'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        current_time = datetime.now().isoformat()
+        cursor.execute('''
+            INSERT INTO predefined_dishes
+            (dish_name, description, ingredients, recipe, photo_path, created_time, updated_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            dish_name,
+            data.get('description', ''),
+            data.get('ingredients', ''),
+            data.get('recipe', ''),
+            data.get('photo_path', ''),
+            current_time,
+            current_time
+        ))
+
+        dish_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'id': dish_id})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/predefined_dishes/<int:dish_id>', methods=['PUT'])
+def update_predefined_dish(dish_id):
+    try:
+        data = request.get_json()
+        dish_name = data.get('dish_name', '').strip()
+        if not dish_name:
+            return jsonify({'error': '菜品名称不能为空'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        current_time = datetime.now().isoformat()
+        cursor.execute('''
+            UPDATE predefined_dishes
+            SET dish_name = ?, description = ?, ingredients = ?, recipe = ?, photo_path = ?, updated_time = ?
+            WHERE id = ?
+        ''', (
+            dish_name,
+            data.get('description', ''),
+            data.get('ingredients', ''),
+            data.get('recipe', ''),
+            data.get('photo_path', ''),
+            current_time,
+            dish_id
+        ))
+
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': '菜品不存在'}), 404
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/predefined_dishes/<int:dish_id>', methods=['DELETE'])
+def delete_predefined_dish(dish_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('DELETE FROM predefined_dishes WHERE id = ?', (dish_id,))
+
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': '菜品不存在'}), 404
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/predefined_dishes/<int:dish_id>/upload_photo', methods=['POST'])
+def upload_photo_for_dish(dish_id):
+    try:
+        if 'photo' not in request.files:
+            return jsonify({'error': '没有上传文件'}), 400
+
+        file = request.files['photo']
+        if file.filename == '':
+            return jsonify({'error': '没有选择文件'}), 400
+
+        if file and allowed_file(file.filename):
+            # 生成文件名
+            filename = f"dish_{dish_id}_{int(time.time())}_{secure_filename(file.filename)}"
+            filepath = os.path.join('data', 'photos', filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            file.save(filepath)
+
+            # 更新数据库中的photo_path
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                UPDATE predefined_dishes
+                SET photo_path = ?, updated_time = ?
+                WHERE id = ?
+            ''', (filepath, datetime.now().isoformat(), dish_id))
+
+            if cursor.rowcount == 0:
+                conn.close()
+                return jsonify({'error': '菜品不存在'}), 404
+
+            conn.commit()
+            conn.close()
+
+            # 触发照片处理
+            try:
+                # 这里可以调用照片处理逻辑
+                # 暂时先返回成功，后续可以集成photo_processor.py的功能
+                return jsonify({'success': True, 'photo_path': filepath})
+            except Exception as process_error:
+                # 照片处理失败，但文件已保存
+                return jsonify({'success': True, 'photo_path': filepath, 'warning': f'照片处理失败: {str(process_error)}'})
+
+        return jsonify({'error': '不支持的文件类型'}), 400
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

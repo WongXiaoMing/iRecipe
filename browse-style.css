@@ -332,3 +332,144 @@ h1 {
         grid-template-columns: 1fr;
     }
 }
+
+/* 预录入菜品样式 */
+.predefined-dish-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.predefined-dish-section h2 {
+    color: #333;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #28a745;
+    padding-bottom: 5px;
+}
+
+.predefined-dish-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.predefined-dish-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.predefined-dish-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.dish-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.dish-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+    flex: 1;
+}
+
+.dish-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-small {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.dish-photo {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.no-photo {
+    width: 100%;
+    height: 150px;
+    background: #e9ecef;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    margin-bottom: 10px;
+}
+
+.dish-description {
+    color: #666;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.dish-meta {
+    font-size: 12px;
+    color: #999;
+}
+
+/* 菜品模态框样式 */
+#dishModal .modal-content {
+    max-width: 600px;
+}
+
+#dishModal .form-group {
+    margin-bottom: 15px;
+}
+
+#dishModal label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+#dishModal input[type="text"],
+#dishModal textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+#dishModal textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+#dishModal .btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+#dishModal .btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+#dishModal .btn-primary:hover {
+    background: #0056b3;
+}

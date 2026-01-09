@@ -401,13 +401,236 @@ async function batchFavorite() {
     }
 }
 
+   // }
+//}
+
+// 录入菜品相关函数
+let predefinedDishes = [];
+
+async function loadPredefinedDishes() {
+    try {
+        const response = await fetch('/api/predefined_dishes');
+        predefinedDishes = await response.json();
+        renderPredefinedDishes();
+    } catch (error) {
+        console.error('加载预录入菜品失败:', error);
+    }
+}
+
+function renderPredefinedDishes() {
+    const grid = document.getElementById('photoGrid');
+    if (predefinedDishes.length === 0) {
+        return; // 如果没有预录入菜品，不显示
+    }
+
+    // 在照片网格前添加预录入菜品区域
+    const existingDishSection = document.getElementById('predefinedDishSection');
+    if (existingDishSection) {
+        existingDishSection.remove();
+    }
+
+    const dishSection = document.createElement('div');
+    dishSection.id = 'predefinedDishSection';
+    dishSection.className = 'predefined-dish-section';
+    dishSection.innerHTML = `
+        <h2>🍽️ 预录入菜品 (${predefinedDishes.length})</h2>
+        <div class="predefined-dish-grid">
+            ${predefinedDishes.map(dish => `
+                <div class="predefined-dish-card" onclick="editPredefinedDish(${dish.id})">
+                    <div class="dish-header">
+                        <h3>${dish.dish_name}</h3>
+                        <div class="dish-actions">
+                            <button onclick="event.stopPropagation(); editPredefinedDish(${dish.id})" class="btn btn-small btn-primary">编辑</button>
+                            <button onclick="event.stopPropagation(); deletePredefinedDish(${dish.id})" class="btn btn-small btn-danger">删除</button>
+                        </div>
+                    </div>
+                    ${dish.photo_path ? `<img src="/${dish.photo_path}" alt="${dish.dish_name}" class="dish-photo">` : '<div class="no-photo">暂无照片</div>'}
+                    ${dish.description ? `<p class="dish-description">${dish.description}</p>` : ''}
+                    <div class="dish-meta">
+                        创建时间: ${new Date(dish.created_time).toLocaleString('zh-CN')}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    grid.insertBefore(dishSection, grid.firstChild);
+}
+
+function showDishModal(dishId = null) {
+    const modal = document.getElementById('dishModal');
+    const form = document.getElementById('dishForm');
+    const title = document.getElementById('dishModalTitle');
+    const photoGroup = document.getElementById('photoUploadGroup');
+    
+    form.reset();
+    
+    if (dishId) {
+        // 编辑模式
+        const dish = predefinedDishes.find(d => d.id === dishId);
+        if (dish) {
+            document.getElementById('dishId').value = dish.id;
+            document.getElementById('dishNameInput').value = dish.dish_name;
+            document.getElementById('dishDescription').value = dish.description || '';
+            document.getElementById('dishIngredients').value = dish.ingredients || '';
+            document.getElementById('dishRecipe').value = dish.recipe || '';
+            title.textContent = '编辑菜品';
+            photoGroup.style.display = 'block';
+            
+            const currentPhoto = document.getElementById('currentPhoto');
+            if (dish.photo_path) {
+                currentPhoto.innerHTML = `<img src="/${dish.photo_path}" alt="当前照片" style="max-width: 200px; max-height: 200px;">`;
+            } else {
+                currentPhoto.innerHTML = '<p>暂无照片</p>';
+            }
+        }
+    } else {
+        // 新建模式
+        document.getElementById('dishId').value = '';
+        title.textContent = '录入菜品';
+        photoGroup.style.display = 'none';
+    }
+    
+    modal.style.display = 'block';
+}
+
+function closeDishModal() {
+    document.getElementById('dishModal').style.display = 'none';
+}
+
+async function saveDish(event) {
+    event.preventDefault();
+    
+    const dishId = document.getElementById('dishId').value;
+    const dishData = {
+        dish_name: document.getElementById('dishNameInput').value.trim(),
+        description: document.getElementById('dishDescription').value.trim(),
+        ingredients: document.getElementById('dishIngredients').value.trim(),
+        recipe: document.getElementById('dishRecipe').value.trim()
+    };
+    
+    if (!dishData.dish_name) {
+        alert('请输入菜品名称');
+        return;
+    }
+    
+    try {
+        let response;
+        if (dishId) {
+            // 更新
+            response = await fetch(`/api/predefined_dishes/${dishId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dishData)
+            });
+        } else {
+            // 新建
+            response = await fetch('/api/predefined_dishes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dishData)
+            });
+        }
+        
+        const result = await response.json();
+        if (result.success) {
+            alert(dishId ? '菜品更新成功' : '菜品录入成功');
+            closeDishModal();
+            await loadPredefinedDishes();
+        } else {
+            alert('保存失败: ' + (result.error || '未知错误'));
+        }
+    } catch (error) {
+        console.error('保存菜品失败:', error);
+        alert('保存失败，请重试');
+    }
+}
+
+async function deletePredefinedDish(dishId) {
+    if (!confirm('确定要删除这个菜品吗？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/predefined_dishes/${dishId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('菜品删除成功');
+            await loadPredefinedDishes();
+        } else {
+            alert('删除失败: ' + (result.error || '未知错误'));
+        }
+    } catch (error) {
+        console.error('删除菜品失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
+async function editPredefinedDish(dishId) {
+    showDishModal(dishId);
+}
+
+async function uploadPhotoForDish(dishId) {
+    const fileInput = document.getElementById('photoUpload');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('请选择要上传的照片');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('photo', file);
+    
+    try {
+        const response = await fetch(`/api/predefined_dishes/${dishId}/upload_photo`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('照片上传成功');
+            // 重新加载菜品数据
+            await loadPredefinedDishes();
+            // 更新当前显示的照片
+            const currentPhoto = document.getElementById('currentPhoto');
+            if (result.photo_path) {
+                currentPhoto.innerHTML = `<img src="/${result.photo_path}" alt="当前照片" style="max-width: 200px; max-height: 200px;">`;
+            }
+        } else {
+            alert('上传失败: ' + (result.error || '未知错误'));
+        }
+    } catch (error) {
+        console.error('上传照片失败:', error);
+        alert('上传失败，请重试');
+    }
+}
+
 // 点击弹窗外部关闭
 window.onclick = function(event) {
-    const modal = document.getElementById('tagModal');
-    if (event.target == modal) {
+    const tagModal = document.getElementById('tagModal');
+    const dishModal = document.getElementById('dishModal');
+    if (event.target == tagModal) {
         closeTagModal();
+    }
+    if (event.target == dishModal) {
+        closeDishModal();
     }
 }
 
 // 页面加载时初始化
 loadData();
+loadPredefinedDishes();
+
+// 添加表单事件监听器
+document.getElementById('dishForm').addEventListener('submit', saveDish);
+document.getElementById('photoUpload').addEventListener('change', function() {
+    const dishId = document.getElementById('dishId').value;
+    if (dishId) {
+        uploadPhotoForDish(parseInt(dishId));
+    }
+});

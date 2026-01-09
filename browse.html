@@ -34,6 +34,7 @@
         
         <div class="toolbar">
             <button class="btn btn-primary" onclick="refreshData()">🔄 刷新</button>
+            <button class="btn btn-info" onclick="showDishModal()">➕ 录入菜品</button>
             <button class="btn btn-danger" onclick="deleteSelected()">🗑️ 删除选中</button>
             <button class="btn btn-success" onclick="batchFavorite()">⭐ 收藏选中</button>
             
@@ -53,6 +54,48 @@
 
         <div class="photo-grid" id="photoGrid">
             <div class="empty-state">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 录入菜品弹窗 -->
+    <div id="dishModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDishModal()">&times;</span>
+            <h2 id="dishModalTitle">录入菜品</h2>
+            <form id="dishForm">
+                <input type="hidden" id="dishId">
+                
+                <div class="form-group">
+                    <label for="dishNameInput">菜名 *</label>
+                    <input type="text" id="dishNameInput" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dishDescription">描述</label>
+                    <textarea id="dishDescription"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dishIngredients">原料</label>
+                    <textarea id="dishIngredients" placeholder="每行一种原料"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dishRecipe">做法</label>
+                    <textarea id="dishRecipe" placeholder="详细的制作步骤"></textarea>
+                </div>
+                
+                <div class="form-group" id="photoUploadGroup" style="display: none;">
+                    <label for="photoUpload">上传照片</label>
+                    <input type="file" id="photoUpload" accept="image/*">
+                    <div id="currentPhoto" style="margin-top: 10px;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary" >保存</button>
+                    <button type="button" class="btn" onclick="closeDishModal()">取消</button>
+                </div>
+            </form>
         </div>
     </div>
 
