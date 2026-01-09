@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import List, Dict, Tuple
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ExifTags
 import imageio
 from rembg import remove
 from watchdog.observers import Observer
@@ -83,6 +83,36 @@ class PhotoProcessor:
             with open(mapping_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         return {}
+    
+    def get_capture_time(self, file_path: str) -> str:
+        """获取文件的拍摄时间"""
+        try:
+            file_ext = os.path.splitext(file_path)[1].lower()
+            
+            # 对于图片文件，尝试读取EXIF数据
+            if file_ext in ['.jpg', '.jpeg', '.png', '.heic', '.heif']:
+                try:
+                    img = Image.open(file_path)
+                    exif_data = img._getexif()
+                    if exif_data:
+                        # 查找DateTimeOriginal标签
+                        for tag, value in exif_data.items():
+                            tag_name = ExifTags.TAGS.get(tag, tag)
+                            if tag_name == 'DateTimeOriginal':
+                                # EXIF时间格式: '2023:01:01 12:00:00'
+                                dt = datetime.strptime(value, '%Y:%m:%d %H:%M:%S')
+                                return dt.isoformat()
+                except Exception as e:
+                    logger.warning(f"读取EXIF失败 {file_path}: {e}")
+            
+            # 如果无法获取EXIF，使用文件的修改时间作为拍摄时间
+            stat = os.stat(file_path)
+            dt = datetime.fromtimestamp(stat.st_mtime)
+            return dt.isoformat()
+            
+        except Exception as e:
+            logger.error(f"获取拍摄时间失败 {file_path}: {e}")
+            return datetime.now().isoformat()
     
     def _save_mapping(self):
         """保存照片-贴纸映射"""
@@ -300,10 +330,12 @@ class PhotoProcessor:
             
             # 更新映射
             if sticker_paths:
+                capture_time = self.get_capture_time(photo_path)
                 self.mapping[photo_id] = {
                     'original_photo': dest_path,
                     'stickers': sticker_paths,
                     'is_live_photo': is_live_photo,
+                    'capture_time': capture_time,
                     'processed_time': datetime.now().isoformat()
                 }
                 self._save_mapping()

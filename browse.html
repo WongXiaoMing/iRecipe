@@ -29,6 +29,19 @@
             <button class="btn btn-primary" onclick="refreshData()">🔄 刷新</button>
             <button class="btn btn-danger" onclick="deleteSelected()">🗑️ 删除选中</button>
             <button class="btn btn-success" onclick="batchFavorite()">⭐ 批量收藏</button>
+            
+            <div class="sort-controls">
+                <label for="sortBy">排序方式:</label>
+                <select id="sortBy" onchange="changeSort()">
+                    <option value="processed_time">处理时间</option>
+                    <option value="capture_time">拍摄时间</option>
+                </select>
+                <label for="sortOrder">顺序:</label>
+                <select id="sortOrder" onchange="changeSort()">
+                    <option value="desc">倒序 (新→旧)</option>
+                    <option value="asc">正序 (旧→新)</option>
+                </select>
+            </div>
         </div>
 
         <div class="photo-grid" id="photoGrid">

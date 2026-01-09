@@ -1,185 +1,194 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-简单的HTTP服务器，用于提供前端页面和API
+简单的Flask服务器，用于提供前端页面和API
 """
 
 import os
 import json
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
-import mimetypes
+import sqlite3
+from flask import Flask, send_file, jsonify, request
+from flask_cors import CORS
 
-class WebHandler(BaseHTTPRequestHandler):
-    """HTTP请求处理器"""
-    
-    def do_GET(self):
-        """处理GET请求"""
-        parsed_path = urlparse(self.path)
-        path = parsed_path.path
-        
-        # 路由处理
-        if path == '/' or path == '/index.html':
-            self.serve_file('index.html')
-        elif path == '/browse.html':
-            self.serve_file('browse.html')
-        elif path == '/browse-style.css':
-            self.serve_file('browse-style.css')
-        elif path == '/recipe.html':
-            self.serve_file('recipe.html')
-        elif path == '/recipe-style.css':
-            self.serve_file('recipe-style.css')
-        elif path == '/browse.js':
-            self.serve_file('browse.js')
-        elif path == '/recipe.js':
-            self.serve_file('recipe.js')
-        elif path == '/api/mapping':
-            self.serve_json('data/photo_sticker_mapping.json')
-        elif path == '/api/tags':
-            self.serve_json('data/tags/sticker_tags.json')
-        elif path.startswith('/data/'):
-            # 提供静态文件（图片、贴纸等）
-            self.serve_file(path[1:])  # 去掉开头的'/'
-        elif path.startswith('/static/'):
-            # CSS/JS文件
-            self.serve_file(path[1:])
-        else:
-            self.send_error(404)
-    
-    def do_POST(self):
-        """处理POST请求"""
-        parsed_path = urlparse(self.path)
-        path = parsed_path.path
-        
-        if path == '/api/save_tags':
-            self.save_tags()
-        elif path == '/api/update_mapping':
-            self.update_mapping()
-        else:
-            self.send_error(404)
-    
-    def serve_file(self, filepath):
-        """提供文件服务"""
-        if not os.path.exists(filepath):
-            self.send_error(404)
-            return
-        
-        # 设置MIME类型
-        mimetype, _ = mimetypes.guess_type(filepath)
-        if mimetype is None:
-            mimetype = 'application/octet-stream'
-        
-        self.send_response(200)
-        self.send_header('Content-type', mimetype)
-        self.end_headers()
-        
-        with open(filepath, 'rb') as f:
-            self.wfile.write(f.read())
-    
-    def serve_json(self, filepath):
-        """提供JSON文件服务"""
-        if not os.path.exists(filepath):
-            # 如果文件不存在，返回空JSON
-            data = {}
-        else:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json; charset=utf-8')
-        self.end_headers()
-        
-        json_str = json.dumps(data, ensure_ascii=False)
-        self.wfile.write(json_str.encode('utf-8'))
-    
-    def save_tags(self):
-        """保存贴纸标记"""
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        
-        try:
-            data = json.loads(post_data.decode('utf-8'))
-            
-            # 读取现有标签
-            tags_file = 'data/tags/sticker_tags.json'
-            if os.path.exists(tags_file):
-                with open(tags_file, 'r', encoding='utf-8') as f:
-                    tags = json.load(f)
-            else:
-                tags = {}
-            
-            # 更新标签
-            sticker_id = data.get('sticker_id')
-            if sticker_id:
-                tags[sticker_id] = {
-                    'dish_name': data.get('dish_name', ''),
-                    'description': data.get('description', ''),
-                    'ingredients': data.get('ingredients', ''),
-                    'recipe': data.get('recipe', ''),
-                    'favorite': data.get('favorite', False),
-                    'updated_time': data.get('updated_time', '')
-                }
-                
-                # 确保目录存在
-                os.makedirs('data/tags', exist_ok=True)
-                
-                # 保存
-                with open(tags_file, 'w', encoding='utf-8') as f:
-                    json.dump(tags, f, ensure_ascii=False, indent=2)
-                
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json; charset=utf-8')
-                self.end_headers()
-                self.wfile.write(json.dumps({'success': True}).encode('utf-8'))
-            else:
-                self.send_error(400, 'Missing sticker_id')
-                
-        except Exception as e:
-            self.send_error(500, str(e))
-    
-    def update_mapping(self):
-        """更新映射文件"""
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        
-        try:
-            data = json.loads(post_data.decode('utf-8'))
-            
-            # 保存映射
-            with open('data/photo_sticker_mapping.json', 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(json.dumps({'success': True}).encode('utf-8'))
-            
-        except Exception as e:
-            self.send_error(500, str(e))
-    
-    def log_message(self, format, *args):
-        """重写日志方法，使用UTF-8编码"""
-        message = format % args
-        print(message)
+app = Flask(__name__)
+CORS(app)  # 启用CORS支持
 
+def get_db_connection():
+    """获取数据库连接"""
+    conn = sqlite3.connect('data/irecipe.db')
+    conn.row_factory = sqlite3.Row
+    return conn
 
-def main():
-    """启动服务器"""
-    port = 8000
-    server_address = ('', port)
-    httpd = HTTPServer(server_address, WebHandler)
-    
-    print(f'服务器启动在 http://localhost:{port}')
+@app.route('/')
+@app.route('/index.html')
+def index():
+    return send_file('index.html')
+
+@app.route('/browse.html')
+def browse():
+    return send_file('browse.html')
+
+@app.route('/browse-style.css')
+def browse_style():
+    return send_file('browse-style.css')
+
+@app.route('/recipe.html')
+def recipe():
+    return send_file('recipe.html')
+
+@app.route('/recipe-style.css')
+def recipe_style():
+    return send_file('recipe-style.css')
+
+@app.route('/browse.js')
+def browse_js():
+    return send_file('browse.js')
+
+@app.route('/recipe.js')
+def recipe_js():
+    return send_file('recipe.js')
+
+@app.route('/api/mapping')
+def api_mapping():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM photo_sticker_mapping')
+    rows = cursor.fetchall()
+    conn.close()
+
+    mapping = {}
+    for row in rows:
+        mapping[row['photo_id']] = {
+            'original_photo': row['original_photo'],
+            'stickers': json.loads(row['stickers']) if row['stickers'] else [],
+            'is_live_photo': bool(row['is_live_photo']),
+            'capture_time': row['capture_time'],
+            'processed_time': row['processed_time']
+        }
+    return jsonify(mapping)
+
+@app.route('/api/tags')
+def api_tags():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM sticker_tags')
+    rows = cursor.fetchall()
+    conn.close()
+
+    tags = {}
+    for row in rows:
+        tags[row['sticker_id']] = {
+            'dish_name': row['dish_name'],
+            'description': row['description'],
+            'ingredients': row['ingredients'],
+            'recipe': row['recipe'],
+            'favorite': bool(row['favorite']),
+            'updated_time': row['updated_time']
+        }
+    return jsonify(tags)
+
+@app.route('/data/<path:filepath>')
+def serve_data(filepath):
+    return send_file(os.path.join('data', filepath))
+
+@app.route('/static/<path:filepath>')
+def serve_static(filepath):
+    return send_file(filepath)
+
+@app.route('/api/save_tags', methods=['POST'])
+def save_tags():
+    try:
+        data = request.get_json()
+        sticker_id = data.get('sticker_id')
+        if not sticker_id:
+            return jsonify({'error': 'Missing sticker_id'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT OR REPLACE INTO sticker_tags
+            (sticker_id, dish_name, description, ingredients, recipe, favorite, updated_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            sticker_id,
+            data.get('dish_name', ''),
+            data.get('description', ''),
+            data.get('ingredients', ''),
+            data.get('recipe', ''),
+            1 if data.get('favorite', False) else 0,
+            data.get('updated_time', '')
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/update_mapping', methods=['POST'])
+def update_mapping():
+    try:
+        data = request.get_json()
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 清空现有数据
+        cursor.execute('DELETE FROM photo_sticker_mapping')
+
+        # 插入新数据
+        for photo_id, photo_data in data.items():
+            cursor.execute('''
+                INSERT INTO photo_sticker_mapping
+                (photo_id, original_photo, stickers, is_live_photo, capture_time, processed_time)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                photo_id,
+                photo_data.get('original_photo', ''),
+                json.dumps(photo_data.get('stickers', [])),
+                1 if photo_data.get('is_live_photo', False) else 0,
+                photo_data.get('capture_time', ''),
+                photo_data.get('processed_time', '')
+            ))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/delete_tags', methods=['POST'])
+def delete_tags():
+    try:
+        data = request.get_json()
+        sticker_ids = data.get('sticker_ids', [])
+
+        if not sticker_ids:
+            return jsonify({'error': 'Missing sticker_ids'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 删除指定的标签
+        for sticker_id in sticker_ids:
+            cursor.execute('DELETE FROM sticker_tags WHERE sticker_id = ?', (sticker_id,))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    print('服务器启动在 http://localhost:8000')
     print('访问 http://localhost:8000/browse.html 查看浏览页')
     print('访问 http://localhost:8000/recipe.html 查看菜谱页')
     print('按 Ctrl+C 停止服务器')
-    
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print('\n服务器已停止')
-        httpd.server_close()
-
-
-if __name__ == '__main__':
-    main()
+    app.run(host='0.0.0.0', port=8000, threaded=True)
