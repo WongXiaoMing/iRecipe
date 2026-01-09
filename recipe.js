@@ -98,6 +98,7 @@ function renderDishes(filteredDishes = null) {
                             <div class="dish-name">
                                 ${dish.favorite ? '<span class="favorite-icon">⭐</span>' : ''}
                                 ${dish.dish_name}
+                                ${dish.order_count > 0 ? `<span class="order-count">📊 ${dish.order_count}次</span>` : ''}
                                 <button class="favorite-btn ${dish.favorite ? 'active' : ''}" 
                                         onclick="event.stopPropagation(); toggleFavorite('${dish.stickerId}')">
                                     ${dish.favorite ? '❤️' : '🤍'}
@@ -157,6 +158,7 @@ function updateOrderSummary() {
     const orderList = document.getElementById('orderList');
     const orderCount = document.getElementById('orderCount');
     const totalCount = document.getElementById('totalCount');
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
 
     const selectedList = Array.from(selectedDishes).map(id => {
         const dish = allDishes.find(d => d.stickerId === id);
@@ -168,10 +170,12 @@ function updateOrderSummary() {
 
     if (selectedList.length === 0) {
         orderList.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">暂无选择</div>';
+        if (placeOrderBtn) placeOrderBtn.disabled = true;
     } else {
         orderList.innerHTML = selectedList.map(name =>
             `<div class="order-item">${name}</div>`
         ).join('');
+        if (placeOrderBtn) placeOrderBtn.disabled = false;
     }
 }
 
@@ -250,6 +254,56 @@ async function toggleFavorite(stickerId) {
         console.error('收藏操作失败:', error);
         // 恢复原来的状态
         dish.favorite = !dish.favorite;
+    }
+}
+
+// 下单功能
+async function placeOrder() {
+    if (selectedDishes.size === 0) {
+        alert('请先选择菜品');
+        return;
+    }
+
+    const selectedList = Array.from(selectedDishes).map(id => {
+        const dish = allDishes.find(d => d.stickerId === id);
+        return dish ? {
+            stickerId: dish.stickerId,
+            dish_name: dish.dish_name,
+            description: dish.description
+        } : null;
+    }).filter(dish => dish);
+
+    if (selectedList.length === 0) {
+        alert('选择的菜品信息不完整');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                dishes: selectedList,
+                total_count: selectedList.length
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`下单成功！订单号：${result.order_id}`);
+            // 清空选择
+            selectedDishes.clear();
+            updateOrderSummary();
+            renderDishes();
+        } else {
+            alert('下单失败：' + (result.error || '未知错误'));
+        }
+    } catch (error) {
+        console.error('下单失败:', error);
+        alert('下单失败，请检查网络连接');
     }
 }
 

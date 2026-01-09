@@ -7,6 +7,7 @@
 import os
 import json
 import sqlite3
+import datetime
 from flask import Flask, send_file, jsonify, request
 from flask_cors import CORS
 
@@ -43,10 +44,21 @@ def recipe_style():
 @app.route('/browse.js')
 def browse_js():
     return send_file('browse.js')
-
 @app.route('/recipe.js')
 def recipe_js():
     return send_file('recipe.js')
+
+@app.route('/orders.html')
+def orders():
+    return send_file('orders.html')
+
+@app.route('/orders-style.css')
+def orders_style():
+    return send_file('orders-style.css')
+
+@app.route('/orders.js')
+def orders_js():
+    return send_file('orders.js')
 
 @app.route('/api/mapping')
 def api_mapping():
@@ -71,19 +83,39 @@ def api_mapping():
 def api_tags():
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # 获取所有标签
     cursor.execute('SELECT * FROM sticker_tags where favorite=true')
-    rows = cursor.fetchall()
+    tag_rows = cursor.fetchall()
+
+    # 获取订单统计信息
+    cursor.execute('''
+        SELECT
+            json_extract(dish.value, '$.stickerId') as sticker_id,
+            COUNT(*) as order_count
+        FROM orders,
+             json_each(orders.dishes) as dish
+        GROUP BY json_extract(dish.value, '$.stickerId')
+    ''')
+    order_stats_rows = cursor.fetchall()
+
+    # 将订单统计转换为字典
+    order_stats = {}
+    for row in order_stats_rows:
+        order_stats[row['sticker_id']] = row['order_count']
+
     conn.close()
 
     tags = {}
-    for row in rows:
+    for row in tag_rows:
         tags[row['sticker_id']] = {
             'dish_name': row['dish_name'],
             'description': row['description'],
             'ingredients': row['ingredients'],
             'recipe': row['recipe'],
             'favorite': bool(row['favorite']),
-            'updated_time': row['updated_time']
+            'updated_time': row['updated_time'],
+            'order_count': order_stats.get(row['sticker_id'], 0)  # 添加订单次数
         }
     return jsonify(tags)
 
@@ -169,21 +201,77 @@ def update_mapping():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/delete_tags', methods=['POST'])
-def delete_tags():
+@app.route('/api/orders', methods=['POST'])
+def create_order():
     try:
         data = request.get_json()
-        sticker_ids = data.get('sticker_ids', [])
+        dishes = data.get('dishes', [])
+        total_count = data.get('total_count', 0)
 
-        if not sticker_ids:
-            return jsonify({'error': 'Missing sticker_ids'}), 400
+        if not dishes or total_count <= 0:
+            return jsonify({'error': 'Invalid order data'}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # 删除指定的标签
-        for sticker_id in sticker_ids:
-            cursor.execute('DELETE FROM sticker_tags WHERE sticker_id = ?', (sticker_id,))
+        order_time = datetime.datetime.now().isoformat()
+
+        cursor.execute('''
+            INSERT INTO orders (order_time, dishes, total_count, status)
+            VALUES (?, ?, ?, ?)
+        ''', (order_time, json.dumps(dishes), total_count, 'pending'))
+
+        order_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'order_id': order_id})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/orders')
+def get_orders():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM orders ORDER BY order_time DESC')
+        rows = cursor.fetchall()
+        conn.close()
+
+        orders = []
+        for row in rows:
+            orders.append({
+                'id': row['id'],
+                'order_time': row['order_time'],
+                'dishes': json.loads(row['dishes']),
+                'total_count': row['total_count'],
+                'status': row['status'],
+                'notes': row['notes'] or ''
+            })
+
+        return jsonify(orders)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/orders/<int:order_id>', methods=['PUT'])
+def update_order_notes(order_id):
+    try:
+        data = request.get_json()
+        notes = data.get('notes', '')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            UPDATE orders
+            SET notes = ?
+            WHERE id = ?
+        ''', (notes, order_id))
+
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': 'Order not found'}), 404
 
         conn.commit()
         conn.close()

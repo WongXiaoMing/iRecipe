@@ -76,15 +76,59 @@ h1 {
     border-top: 2px solid #667eea;
 }
 
+.order-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.place-order {
+    flex: 1;
+    padding: 10px 15px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.place-order:hover:not(:disabled) {
+    background: #218838;
+}
+
+.place-order:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
 .clear-order {
-    margin-top: 10px;
-    width: 100%;
-    padding: 8px;
+    padding: 8px 12px;
     background: #dc3545;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.clear-order:hover {
+    background: #c82333;
+}
+
+.view-orders {
+    padding: 8px 12px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.view-orders:hover {
+    background: #0056b3;
 }
 
 .filter-bar {
@@ -174,6 +218,16 @@ h1 {
 
 .dish-name .favorite-icon {
     color: #ffc107;
+}
+
+.order-count {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: normal;
+    margin-left: auto;
 }
 
 .dish-description {

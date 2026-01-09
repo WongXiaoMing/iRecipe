@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单记录 - 点餐系统</title>
+    <link rel="stylesheet" href="orders-style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="nav-bar">
+            <a href="/" class="nav-link">🏠 主页</a>
+            <a href="/browse.html" class="nav-link">📸 管理</a>
+            <a href="/recipe.html" class="nav-link">📖 点餐</a>
+            <a href="/orders.html" class="nav-link active">📋 订单</a>
+        </div>
+
+        <div class="header">
+            <h1>📋 订单记录</h1>
+            <p class="subtitle">查看您的下单历史记录</p>
+        </div>
+
+        <div class="orders-container" id="ordersContainer">
+            <div class="empty-state">
+                <h2>加载中...</h2>
+            </div>
+        </div>
+
+        <!-- 订单详情模态框 -->
+        <div id="orderModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">订单详情</h2>
+                    <span class="close" onclick="closeOrderModal()">&times;</span>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- 订单详情内容将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="orders.js"></script>
+</body>
+</html>

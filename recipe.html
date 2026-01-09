@@ -40,6 +40,7 @@ body {
             <a href="/" class="nav-link">🏠 主页</a>
             <a href="/browse.html" class="nav-link">📸 管理</a>
             <a href="/recipe.html" class="nav-link active">📖 点餐</a>
+            <a href="/orders.html" class="nav-link">📋 订单</a>
         </div>
         
         <div class="header">
@@ -53,7 +54,11 @@ body {
                 <div style="color: #999; text-align: center; padding: 20px;">暂无选择</div>
             </div>
             <div class="order-total">共 <span id="totalCount">0</span> 道菜</div>
-            <button class="clear-order" onclick="clearOrder()">清空选择</button>
+            <div class="order-actions">
+                <button class="place-order" onclick="placeOrder()" id="placeOrderBtn" disabled>🍽️ 下单</button>
+                <button class="clear-order" onclick="clearOrder()">清空选择</button>
+                <a href="/orders.html" class="view-orders">📋 查看订单</a>
+            </div>
         </div>
 
         <div class="filter-bar">

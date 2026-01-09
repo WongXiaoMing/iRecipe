@@ -13,7 +13,8 @@
 ### 🌐 网页端管理系统（前端）
 - **浏览管理页**：照片和贴纸的浏览、编辑、删除、收藏
 - **标记功能**：为贴纸添加菜名、描述、原料、做法等信息
-- **菜谱展示页**：按菜名分类展示，支持搜索和简单点餐功能
+- **菜谱展示页**：按菜名分类展示，支持搜索和点餐功能
+- **订单记录页**：查看历史下单记录，按时间排序展示
 
 ## 项目结构
 
@@ -25,16 +26,21 @@ iRecipe/
 ├── requirements.txt        # Python依赖
 ├── index.html              # 首页
 ├── browse.html             # 浏览管理页
+├── browse-style.css        # 浏览页样式
+├── browse.js               # 浏览页脚本
 ├── recipe.html             # 菜谱展示页
+├── recipe-style.css        # 菜谱页样式
+├── recipe.js               # 菜谱页脚本
+├── orders.html             # 订单记录页
+├── orders-style.css        # 订单页样式
+├── orders.js               # 订单页脚本
 ├── README.md               # 说明文档
 └── data/                   # 数据目录（自动生成）
+    ├── irecipe.db          # SQLite数据库
     ├── raw_photos/         # 筛选后的原图
-    ├── stickers/
-    │   ├── static/         # 静态贴纸（PNG）
-    │   └── dynamic/        # 动态贴纸（GIF）
-    ├── tags/
-    │   └── sticker_tags.json  # 贴纸标记数据
-    └── photo_sticker_mapping.json  # 照片-贴纸映射
+    └── stickers/
+        ├── static/         # 静态贴纸（PNG）
+        └── dynamic/        # 动态贴纸（GIF）
 ```
 
 ## 安装与配置
@@ -95,6 +101,7 @@ python server.py
 - **首页**：http://localhost:8000/
 - **浏览管理页**：http://localhost:8000/browse.html
 - **菜谱展示页**：http://localhost:8000/recipe.html
+- **订单记录页**：http://localhost:8000/orders.html
 
 ## 功能说明
 
@@ -119,11 +126,23 @@ python server.py
 - 浏览所有已标记的菜品
 - 使用搜索框快速查找
 - 勾选菜品进行"点餐"
+- 点击"🍽️ 下单"按钮提交订单
 - 查看菜品的原料和做法详情
+- **显示每个菜品的被下单次数统计**
+
+#### 订单记录页
+- 查看所有历史订单记录
+- 按下单时间倒序排列
+- 显示订单状态（待处理/已完成/已取消）
+- 查看每个订单包含的菜品详情
+- **显示订单统计信息（总订单数、状态分布）**
+- **显示最受欢迎的菜品排行榜**
 
 ## 技术栈
 
 - **后端**：Python 3.7+
+  - Flask: Web框架
+  - SQLite3: 数据存储
   - Pillow: 图像处理
   - OpenCV: 图像分析
   - rembg: 背景移除
@@ -143,12 +162,17 @@ python server.py
 
 ## 扩展功能建议
 
+- [x] 集成SQLite数据库存储（已完成）
+- [x] 添加订单管理系统（已完成）
+- [x] 添加菜品订单统计功能（已完成）
 - [ ] 集成CLIP或百度AI进行更准确的食物识别
 - [ ] 支持多用户登录和权限管理
 - [ ] 添加菜品分类和标签系统
 - [ ] 支持导出菜谱为PDF或图片
 - [ ] 添加移动端APP支持
 - [ ] 支持云端存储同步
+- [ ] 添加订单状态管理（确认/制作/完成）
+- [ ] 支持订单导出和打印
 
 ## 许可证
 
